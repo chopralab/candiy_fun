@@ -18,7 +18,7 @@ extract.by.mesh <- function(ts) {
   extract$by.what <- factor( extract$bywhat, levels = extract$bywhat)
   
   # count known drugs
-  extract$known.count <- count.known.drugs(ts$interactions, extract$by.what)
+  extract <- merge(extract, ts$known.drugs %>% rename(by.what = MESH))
   
   extract
 }
@@ -27,7 +27,7 @@ extract.by.drug <- function(ts) {
   extract <- extract.checked(ts$analysis$mesh.by.drug)
   extract$rdrug <- colMeans(ts$rmcol.by.drug)
   extract$rmesh <- colMeans(ts$rmesh.by.drug)
-  
+
   extract[ is.na(extract) ] <- 0
   extract <- arrange(extract, desc(norm.checked), desc(rdrug), desc(rmesh))
   extract$by.what <- factor(extract$bywhat,
@@ -48,12 +48,47 @@ extract.by.cdrug <- function(drug.extract) {
 }
 
 extract.by.category <- function(ts) {
+  pred <- count.predictions(ts$interactions)
+  known <- ts$known.drugs
+
   ts$analysis$mesh.by.drug %>%
     filter(is.checked) %>%
     mutate(category = convert.col(categories, bywhat, 'V2', 'V1' )) %>%
+    merge(pred %>%  rename(match.name = MESH)) %>%
+    merge(known %>% rename(match.name = MESH)) %>%
     group_by(category, match.name) %>%
-    summarise(rank = sum(rank)) %>%
+    summarise(rank = sum(rank),
+              prediction.count = unique(prediction.count),
+              known.count = unique(known.count)) %>%
     ungroup %>%
-    arrange(desc(rank)) %>%
+    mutate(rank.per = rank / prediction.count) %>%
+    arrange(desc(rank.per)) %>%
     mutate(match.name = factor(match.name, levels = unique(match.name)))
+}
+
+extract.all <- function(ts) {
+  # Top10 here on purpose, ensures X-axis is constant
+  extract <- extract.checked(top40$analysis$drug.by.mesh)
+  extract[ is.na(extract) ] <- 0
+  
+  extract2 <- extract.checked(ts$analysis$mesh.by.drug)
+  extract2[ is.na(extract2) ] <- 0
+  
+  extract2 <-
+    extract2 %>%
+    select(match.name = bywhat,
+           norm.checked2 = norm.checked)
+    
+
+  ts$analysis$drug.by.mesh %>%
+    filter(is.checked) %>%
+    filter(rank!=0) %>%
+    merge(extract) %>%
+    merge(extract2) %>%
+    as.tibble() %>%
+    arrange(desc(norm.checked), rank) %>%
+    mutate(bywhat = factor(bywhat, levels = unique(bywhat))) %>%
+    mutate(match.name = factor(match.name, levels = unique(match.name))) %>%
+    mutate(category = convert.col(categories, match.name, 'V2', 'V1' ))
+    
 }

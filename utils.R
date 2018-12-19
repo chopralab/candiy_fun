@@ -19,6 +19,8 @@ load.project.files <- function( interactions.file,
   read_lines(diseases.of.interest.file) -> diseases
   as.factor(diseases) -> ts$diseases
 
+  count.known.drugs(ts$interactions) -> ts$known.drugs
+
   ts
 }
 
@@ -42,12 +44,23 @@ convert.col <- function (interactions,
           } )
 }
 
-count.known.drugs <- function ( interactions, meshes) {
-  aaply( as.character(meshes), 1,
-         function(x) {
-           length(unique(interactions[ interactions$MESH == x, ]$col))
-         }
-  )
+count.known.drugs <- function(interactions) {
+  top10$interactions %>%
+    select(MESH, col) %>%
+    distinct %>%
+    group_by(MESH) %>%
+    tally %>%
+    rename(known.count = n)
+}
+
+count.predictions <- function(interactions) {
+  interactions %>%
+    filter(score != 0) %>%
+    select(MESH, mcol) %>%
+    distinct %>%
+    group_by(MESH) %>%
+    tally %>%
+    rename(prediction.count = n)
 }
 
 do.stat.test <- function( ts ) {
@@ -64,11 +77,4 @@ do.stat.test <- function( ts ) {
     ks.test(extract$by.drug$norm.checked, extract$by.drug$rdrug, alternative = "g")
   
   detach()
-}
-
-get_legend<-function(myggplot){
-  tmp <- ggplot_gtable(ggplot_build(myggplot))
-  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
-  legend <- tmp$grobs[[leg]]
-  return(legend)
 }

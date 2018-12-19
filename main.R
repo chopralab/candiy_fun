@@ -5,6 +5,8 @@ library(parallel)
 library(plyr)
 library(dplyr)
 library(tidyr)
+library(cowplot)
+library(gridExtra)
 
 source("utils.R")
 source("ranker.R")
@@ -20,11 +22,13 @@ extract.and.graph <- function(ts) {
   ts$extract$by.drug <- extract.by.drug(ts)
   ts$extract$by.cdrug <- extract.by.cdrug(ts$extract$by.drug)
   ts$extract$by.catg <-extract.by.category(ts)
+  ts$extract$by.heat <- extract.all(ts)
   
   ts$graphs$n.m.e <- ts$extract$by.mesh %>% figure.by.mesh(ts$top)
   ts$graphs$n.d.e <- ts$extract$by.drug %>% figure.by.drug(ts$top)
   ts$graphs$n.c.e <- ts$extract$by.cdrug %>% figure.by.drug(ts$top)
   ts$graphs$m.cat <- ts$extract$by.catg %>% figure.by.category(ts$top)
+  ts$graphs$m.all <- ts$extract$by.heat %>% figure.by.heat(ts$top)
 }
 
 load.preset.project.files(10) -> top10
@@ -49,6 +53,14 @@ random.analysis(top100,16)
 cat('Random analysis complete\n')
 
 categories <- read.table("categories.tsv", header = F)
+
+category_names = c("amph" = "Amphetamines",
+                   "canb" = "Canabinoids",
+                   "cath" = "Cathinones",
+                   "phen" = "Phenethylamines",
+                   "tryp" = "Tryptamine",
+                   "unkn" = "Other"
+                  )
 
 extract.and.graph(top10)
 extract.and.graph(top25)

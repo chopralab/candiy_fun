@@ -1,68 +1,90 @@
-library(cowplot)
-library(gridExtra)
 
 figure.by.mesh <- function ( extract.data, top, text.size=0.6 ) {
   extract.data %>% ggplot(aes(x=by.what)) +
-    geom_bar(stat="identity", aes(y=norm.checked, fill=log(known.count)), width = 1) +
+    geom_col(aes(y=norm.checked, fill=known.count), width = 1) +
     geom_line(aes(y=rdrug, group = 1), color="#00BA38", size=1) +
-    annotate( "segment",
-              x=as.numeric(extract.data$by.what[1]),
-              xend=as.numeric(tail(extract.data$by.what, 1)),
-              y=mean(extract.data$rdrug),
-              yend=mean(extract.data$rdrug),
-              color = "darkgreen", alpha = 0.5 ) +
-    scale_x_discrete(breaks=NULL) + 
+    #geom_line(aes(y=rmesh, group = 1), color="#619CFF", size=1) +
+    geom_hline(color = "darkgreen", alpha = 0.5, yintercept = mean(extract.data$rdrug)) +
     scale_y_continuous(expand = c(0,0)) +
-    scale_fill_continuous(low="#F8766D", high="#619CFF") +
-    labs (fill = "Number of Known Compounds (Logarithmic)") +
+    scale_fill_continuous(low="#F8766D", high="#619CFF", trans = "log", breaks = c(1,10,60)) +
+    labs (fill = "Number of Known Compounds") +
     coord_cartesian(ylim=c(0,100)) +
     xlab("Indication") + ylab("% psychoactives") + ggtitle(paste0("Top ", top)) +
-    guides(color=FALSE) + theme(legend.position = "top", plot.title = element_text(margin=margin(b = -10, unit = "pt")))
+    guides(color=FALSE) +
+    theme(legend.position = "bottom",
+          legend.key.width = unit(.12, "npc"),
+          plot.title = element_text(margin=margin(b = -10, unit = "pt")),
+          axis.ticks.x = element_blank(), axis.text.x = element_blank())
 }
 
 figure.by.drug <- function ( data, top ) {
   ggplot(data, aes(x=by.what)) +
-    geom_bar(stat="identity", aes(y=norm.checked, fill="Normal"), width = 1) +
-    geom_bar(aes(y=rdrug, fill = "Randomized Compounds"), stat = "identity", alpha=0.4, width = 1) +
-    annotate( "segment",
-              x=as.numeric(data$by.what[1]),
-              xend=as.numeric(tail(data$by.what, 1)),
-              y=mean(data$rdrug),
-              yend=mean(data$rdrug),
-              color="darkgreen", alpha = 0.5) +
-    geom_bar(aes(y=rmesh, fill = "Randomized Indications"), stat = "identity", alpha=0.4, width = 1) +
-    annotate( "segment",
-              x=as.numeric(data$by.what[1]),
-              xend=as.numeric(tail(data$by.what, 1)),
-              y=mean(data$rmesh),
-              yend=mean(data$rmesh),
-              color="darkblue", alpha = 0.5) +
-    scale_x_discrete(breaks=NULL) + 
-    scale_y_continuous(expand = c(0,0)) +
+    geom_col(aes(y=norm.checked, fill="Normal"), width = 1) +
+
+    # Random controls    
+    geom_col(aes(y=rdrug, fill = "Randomized Compounds"), alpha=0.4, width = 1) +
+    geom_hline(color="darkgreen", alpha = 0.5, yintercept = mean(data$rdrug)) +
+    geom_col(aes(y=rmesh, fill = "Randomized Indications"), alpha=0.4, width = 1) +
+    geom_hline(color="darkgreen", alpha = 0.5, yintercept = mean(data$rmesh)) +
+
+    # Aesthetics
+    scale_y_continuous(expand = c(0,0), limits = c(0,100)) +
     scale_fill_manual( values = c("#F8766D", "#00BA38", "#619CFF"), guide = guide_legend(title = "") ) +
-    coord_cartesian(ylim=c(0,100)) +
     xlab("Compound") + ylab("% mental indications") + ggtitle(paste0("Top ", top)) + guides(color=FALSE) +
-    theme(legend.position = "top", plot.title = element_text(margin=margin(b = -10, unit = "pt")),
-          axis.line.x = element_line(color="black",size = 0.1,linetype = "solid"), axis.line.y = element_line(size = 0.1))
+    theme(legend.position = "bottom",
+          plot.title = element_text(margin=margin(b = -10, unit = "pt")),
+          axis.ticks.x = element_blank(), axis.text.x = element_blank())
 }
 
+# figure.by.category <- function(data, top) {
+#   ggplot(data, aes(x=category, y=match.name, fill=rank)) +
+#     geom_tile() +
+#     xlab("Category of Psychoactive") +
+#     ylab("Indication") +
+#     scale_fill_continuous(low = "white") +
+#     ggtitle(paste0("Top", top)) +
+#     scale_y_discrete(breaks=NULL) +
+#     scale_x_discrete(labels = category_names) +
+#     labs(fill="Number of predictions") +
+#     theme(legend.position = "bottom", legend.key.width = unit(.12, "npc"),
+#           legend.spacing = unit(0.1, "npc"), legend.justification = "center",
+#           plot.title = element_text(margin=margin(b = 10, unit = "pt")),
+#           axis.text.x = element_text(angle = 10, size = 9))
+# }
+
 figure.by.category <- function(data, top) {
-  ggplot(data, aes(x=category, y=match.name, fill=rank)) +
+  ggplot(data, aes(match.name, rank.per, fill = known.count)) +
+    facet_grid(category~., labeller=labeller(category = category_names), switch="both") +
+    geom_col() +
+    scale_y_sqrt(breaks = c(0.1, 0.25, 0.5, 1.0), expand = c(0,0), limits=c(0,1.0)) +
+    scale_fill_continuous(low="#F8766D", high="#619CFF", trans = "log", breaks = c(1,10,60)) +
+    labs (fill = "Number of Known Drugs") +
+    xlab("Indication") + ylab("% psychoactives") + ggtitle(paste0("Top ", top)) +
+    theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+          legend.position = "bottom", legend.text = element_text(size = 9),
+          legend.key.width = unit(.12, "npc"),
+          strip.placement = "outsie", strip.background = element_blank(),
+          plot.title = element_text(margin=margin(b = -10, unit = "pt")))
+}
+
+figure.by.heat <- function(data, top) {
+  ggplot(data, aes(bywhat, match.name, fill = norm.checked2)) +
+    facet_grid(category~., labeller=labeller(category = category_names), switch="both", scales = "free") +
     geom_tile() +
-    xlab("Category of Psychoactive") +
-    ylab("Indication") +
-    scale_fill_continuous(low = "white") +
-    ggtitle(paste0("Top", top)) +
-    theme(legend.position = "top", plot.title = element_text(margin=margin(b = 10, unit = "pt"))) +
-    scale_y_discrete(breaks=NULL) +
-    labs(fill="Number of predictions")
+    scale_fill_continuous(low="#F8766D", high="#619CFF", trans = "log1p", breaks = c(25,50,75,100), limits = c(1,100)) +
+    labs (fill = "% mental health") +
+    xlab("Indication") + ylab("Psychoactive") + ggtitle(paste0("Top ", top)) +
+    theme(axis.text = element_blank(), axis.ticks.x = element_blank(),
+          legend.position = "bottom", legend.text = element_text(size = 9),
+          legend.key.width = unit(.12, "npc"),
+          strip.placement = "outsie", strip.background = element_blank())
 }
 
 save.out.all.graphs <- function(arranged.graphs) {
   ggsave("figure2.svg", arranged.graphs$by.mesh, height = 7.46)
   ggsave("figure3.svg", arranged.graphs$by.drug, height = 7.46)
   ggsave("figure4.svg", arranged.graphs$by.cate, height = 7.46)
-  ggsave("figure5.svg", arranged.graphs$by.mcat, height = 7.46)
+  ggsave("figure5.svg", arranged.graphs$by.heat, height = 7.46)
 }
 
 arrange.all.graphs <- function() {
@@ -91,11 +113,23 @@ arrange.all.graphs <- function() {
   
   get_legend(top10$graphs$m.cat) -> mcat.legend
   
-  grid.arrange(top10$graphs$m.cat + guides(fill=F), top25 $graphs$m.cat + guides(fill=F),
-               top40$graphs$m.cat + guides(fill=F), top100$graphs$m.cat + guides(fill=F),
-               mcat.legend, ncol=2, nrow = 3, heights = c(2.5, 2.5, 0.5),
-               layout_matrix = rbind( c(1,2), c(3,4), c(5,5))) -> arranged.graphs$by.mcat
+  grid.arrange(top10$graphs$m.cat + guides(fill=F) + theme(axis.title = element_blank()),
+               top25$graphs$m.cat + guides(fill=F) + theme(axis.title = element_blank()),
+               top40$graphs$m.cat + guides(fill=F) + theme(axis.title = element_blank()),
+               top100$graphs$m.cat+ guides(fill=F) + theme(axis.title = element_blank()),
+               textGrob("Indication"), ncol=2, nrow = 3, heights = c(3, 3, 0.5),
+               layout_matrix = rbind( c(1,2), c(3,4), c(5,5)), bottom = mcat.legend,
+               left = textGrob("% psychoactive", rot = 90)) -> arranged.graphs$by.mcat
   
+  get_legend(top10$graphs$m.all) -> mcat.legend
+  
+  grid.arrange(top10$graphs$m.all + guides(fill=F) + theme(axis.title = element_blank()),
+               top25$graphs$m.all + guides(fill=F) + theme(axis.title = element_blank()),
+               top40$graphs$m.all + guides(fill=F) + theme(axis.title = element_blank()),
+               top100$graphs$m.all+ guides(fill=F) + theme(axis.title = element_blank()),
+               textGrob("Indication"), ncol=2, nrow = 3, heights = c(3, 3, 0.5),
+               layout_matrix = rbind( c(1,2), c(3,4), c(5,5)), bottom = mcat.legend,
+               left = textGrob("% psychoactive", rot = 90)) -> arranged.graphs$by.heat
   
   return (arranged.graphs)
 }
