@@ -45,7 +45,7 @@ convert.col <- function (interactions,
 }
 
 count.known.drugs <- function(interactions) {
-  top10$interactions %>%
+  interactions %>%
     select(MESH, col) %>%
     distinct %>%
     group_by(MESH) %>%

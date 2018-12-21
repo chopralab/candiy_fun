@@ -5,7 +5,9 @@ library(parallel)
 library(plyr)
 library(dplyr)
 library(tidyr)
+library(tibble)
 library(cowplot)
+library(grid)
 library(gridExtra)
 
 source("utils.R")
@@ -45,10 +47,10 @@ rank.interactions(top100)
 
 cat('Rankings calculated\n')
 
-random.analysis(top10, 16)
-random.analysis(top25, 16)
-random.analysis(top40, 16)
-random.analysis(top100,16)
+random.analysis(top10, 2)
+random.analysis(top25, 2)
+random.analysis(top40, 2)
+random.analysis(top100,2)
 
 cat('Random analysis complete\n')
 
@@ -69,4 +71,5 @@ extract.and.graph(top100)
 
 cat('Graphs made\n')
 
-arrange.all.graphs()
+arrange.all.graphs() -> all.graphs
+all.graphs %>% save.out.all.graphs

@@ -78,13 +78,16 @@ extract.all <- function(ts) {
     extract2 %>%
     select(match.name = bywhat,
            norm.checked2 = norm.checked)
-    
+
+  pred <- count.predictions(ts$interactions)
 
   ts$analysis$drug.by.mesh %>%
     filter(is.checked) %>%
-    filter(rank!=0) %>%
+    #filter(rank!=0) %>%
+    merge(pred %>% rename(bywhat = MESH)) %>%
     merge(extract) %>%
-    merge(extract2) %>%
+    #merge(extract2) %>%
+    mutate(norm.checked2 = rank / ts$top) %>%
     as.tibble() %>%
     arrange(desc(norm.checked), rank) %>%
     mutate(bywhat = factor(bywhat, levels = unique(bywhat))) %>%
