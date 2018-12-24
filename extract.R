@@ -10,8 +10,8 @@ extract.checked <- function(analysis) {
 
 extract.by.mesh <- function(ts) {
   extract <- extract.checked(ts$analysis$drug.by.mesh)
-  extract$rdrug <- colMeans(ts$rmcol.by.mesh)
-  extract$rmesh <- colMeans(ts$rmesh.by.mesh)
+  extract$rdrug <- colMeans(ts$random.analysis$rmcol.by.mesh)
+  extract$rmesh <- colMeans(ts$random.analysis$rmesh.by.mesh)
   
   extract[ is.na(extract) ] <- 0
   extract <- arrange(extract, desc(norm.checked), desc(rdrug), desc(rmesh))
@@ -25,20 +25,22 @@ extract.by.mesh <- function(ts) {
 
 extract.by.drug <- function(ts) {
   extract <- extract.checked(ts$analysis$mesh.by.drug)
-  extract$rdrug <- colMeans(ts$rmcol.by.drug)
-  extract$rmesh <- colMeans(ts$rmesh.by.drug)
+  extract$rdrug <- colMeans(ts$random.analysis$rmcol.by.drug)
+  extract$rmesh <- colMeans(ts$random.analysis$rmesh.by.drug)
+  extract$category <- ts$categories[extract$bywhat] %>% unlist
+
+  # ensure that drugs which are never predicted don't become predicted
+  extract$rdrug[!(extract$bywhat %in% ts$interactions$mcol)] = 0
+  extract$rmesh[!(extract$bywhat %in% ts$interactions$mcol)] = 0
 
   extract[ is.na(extract) ] <- 0
   extract <- arrange(extract, desc(norm.checked), desc(rdrug), desc(rmesh))
-  extract$by.what <- factor(extract$bywhat,
-                                    levels = extract$bywhat)
+  extract$by.what <- factor(extract$bywhat, levels = extract$bywhat)
   
   extract
 }
 
 extract.by.cdrug <- function(drug.extract) {
-  drug.extract$category <- convert.col(
-    categories, as.character(drug.extract$by.what), 'V2', 'V1')
   
   drug.extract <- arrange(drug.extract, category)
   drug.extract$by.what <- factor(drug.extract$by.what,
@@ -53,7 +55,7 @@ extract.by.category <- function(ts) {
 
   ts$analysis$mesh.by.drug %>%
     filter(is.checked) %>%
-    mutate(category = convert.col(categories, bywhat, 'V2', 'V1' )) %>%
+    mutate(category = ts$categories[bywhat] %>% unlist) %>%
     merge(pred %>%  rename(match.name = MESH)) %>%
     merge(known %>% rename(match.name = MESH)) %>%
     group_by(category, match.name) %>%
@@ -66,32 +68,22 @@ extract.by.category <- function(ts) {
     mutate(match.name = factor(match.name, levels = unique(match.name)))
 }
 
-extract.all <- function(ts) {
+extract.heat <- function(ts) {
   # Top10 here on purpose, ensures X-axis is constant
   extract <- extract.checked(top40$analysis$drug.by.mesh)
   extract[ is.na(extract) ] <- 0
-  
-  extract2 <- extract.checked(ts$analysis$mesh.by.drug)
-  extract2[ is.na(extract2) ] <- 0
-  
-  extract2 <-
-    extract2 %>%
-    select(match.name = bywhat,
-           norm.checked2 = norm.checked)
 
-  pred <- count.predictions(ts$interactions)
+  pred <- ts$known.drugs
 
   ts$analysis$drug.by.mesh %>%
     filter(is.checked) %>%
-    #filter(rank!=0) %>%
     merge(pred %>% rename(bywhat = MESH)) %>%
     merge(extract) %>%
-    #merge(extract2) %>%
-    mutate(norm.checked2 = rank / ts$top) %>%
+    mutate(category = ts$categories[match.name] %>% unlist) %>%
+    mutate(norm.checked2 = rank / known.count) %>%
     as.tibble() %>%
     arrange(desc(norm.checked), rank) %>%
+    mutate(drug.id = match.name) %>%
     mutate(bywhat = factor(bywhat, levels = unique(bywhat))) %>%
-    mutate(match.name = factor(match.name, levels = unique(match.name))) %>%
-    mutate(category = convert.col(categories, match.name, 'V2', 'V1' ))
-    
+    mutate(match.name = factor(match.name, levels = unique(match.name)))
 }

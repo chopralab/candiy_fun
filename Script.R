@@ -1,0 +1,1 @@
+.libPaths(c(.libPaths(), "C:/libraries/Rwin-3.5"))
