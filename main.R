@@ -34,26 +34,36 @@ extract.and.graph <- function(ts) {
   ts$graphs$m.all <- ts$extract$by.heat %>% figure.by.heat(ts$top)
 }
 
-load.preset.project.files(10) -> top10
-load.preset.project.files(25) -> top25
-load.preset.project.files(40) -> top40
-load.preset.project.files(100) -> top100
+if (!file.exists("rand2.rda")) {
 
-cat('Data loaded\n')
+  load.preset.project.files(10) -> top10
+  load.preset.project.files(25) -> top25
+  load.preset.project.files(40) -> top40
+  load.preset.project.files(100) -> top100
 
-rank.interactions(top10)
-rank.interactions(top25)
-rank.interactions(top40)
-rank.interactions(top100)
+  cat('Data loaded\n')
 
-cat('Rankings calculated\n')
+  rank.interactions(top10)
+  rank.interactions(top25)
+  rank.interactions(top40)
+  rank.interactions(top100)
 
-random.analysis(top10, 2)
-random.analysis(top25, 2)
-random.analysis(top40, 2)
-random.analysis(top100,2)
+  cat('Rankings calculated\n')
 
-cat('Random analysis complete\n')
+  random.analysis(top10, 2)
+  random.analysis(top25, 2)
+  random.analysis(top40, 2)
+  random.analysis(top100,2)
+
+  cat('Random analysis complete\n')
+} else {
+  load("rand2.rda")
+  
+  rank.interactions(top10)
+  rank.interactions(top25)
+  rank.interactions(top40)
+  rank.interactions(top100)
+}
 
 extract.and.graph(top10)
 extract.and.graph(top25)
