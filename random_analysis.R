@@ -57,7 +57,7 @@ random.mc.analysis <- function( sub.table,
   } ) %>% bind_rows
 }
 
-random.analysis <- function(ts, rand.runs = 1) {
+random.analysis <- function(ts, rand.runs = 1000) {
   hack <- 
     tibble(MESH = ts$diseases[1],
            mcol = ts$drug.ids, score = 0) %>%
@@ -69,25 +69,25 @@ random.analysis <- function(ts, rand.runs = 1) {
     select(MESH, mcol, score) %>%
     rbind(hack)
 
-  ts$rmcol.by.mesh <-
+  ts$random.analysis$rmcol.by.mesh <-
     random.by.analysis(sub.table, 
                        mcol,   ts$drug.ids,
                        MESH, ts$diseases, 
                        total.runs = rand.runs)
   
-  ts$rmcol.by.drug <-
+  ts$random.analysis$rmcol.by.drug <-
     random.mc.analysis(sub.table,
                        mcol, ts$drug.ids,
                        MESH, ts$diseases,
                        total.runs = rand.runs)
 
-  ts$rmesh.by.drug <-
+  ts$random.analysis$rmesh.by.drug <-
     random.by.analysis(sub.table,
                        MESH, ts$diseases,
                        mcol, ts$drug.ids,
                        total.runs = rand.runs)
 
-  ts$rmesh.by.mesh <-
+  ts$random.analysis$rmesh.by.mesh <-
     random.mc.analysis(sub.table,
                        MESH, ts$diseases,
                        mcol, ts$drug.ids,

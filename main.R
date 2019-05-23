@@ -16,6 +16,7 @@ source("random_analysis.R")
 source("extract.R")
 source("graph.R")
 source("table.R")
+source("chorddiagram.R")
 
 # adjust as needed
 options(mc.cores = 8)
@@ -50,10 +51,10 @@ if (!file.exists("rand2.rda")) {
 
   cat('Rankings calculated\n')
 
-  random.analysis(top10, 2)
-  random.analysis(top25, 2)
-  random.analysis(top40, 2)
-  random.analysis(top100,2)
+  random.analysis(top10)
+  random.analysis(top25)
+  random.analysis(top40)
+  random.analysis(top100)
 
   cat('Random analysis complete\n')
 } else {
@@ -79,6 +80,8 @@ list() -> mesh.to.disease
 top100$interactions %>% filter(MESH %in% top100$diseases) %>% select(MESH, disorder) %>% distinct -> temp
 mesh.to.disease[temp$MESH %>% as.character] <- temp$disorder %>% as.character
 unlist(mesh.to.disease) -> mesh.to.disease
+
+make.all.chords()
 
 all.top(table.by.mesh) %>%
   spread(top, per.psych) %>%
